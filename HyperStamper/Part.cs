@@ -12,8 +12,8 @@ namespace HyperStamper
 
         // Size of the product in the X, Y, and Z dimensions, as well as information about the absence (0) or
         // presence (1) of a block at each coordinate.
-        public byte length, width, height;
-        public BitArray bitArray;
+        protected byte length, width, height;
+        protected BitArray bitArray;
 
         // Constructors.
         public Part(byte length, byte width, byte height, BitArray bitArray)
@@ -56,17 +56,26 @@ namespace HyperStamper
                         }
             // Add 180-degree rotation.
             Part rotation180 = Rotate180(length, width, height, length - 1 - maxX, width - 1 - maxY, this);
-            if (CompareTo(rotation180) != 0)
+            bool symmetric180 = CompareTo(rotation180) == 0;
+            if (!symmetric180)
                 rotations.Add(rotation180);
             // Add 90- and 270-degree rotations, if there's room for them in the space provided.
             if (maxX < width && maxY < length)
             {
-                // TODO: Add rotations.
+                Part rotation90 = Rotate90(length, width, height, width - 1 - maxY, this);
+                if (CompareTo(rotation90) != 0)
+                {
+                    rotations.Add(rotation90);
+                    if (!symmetric180)
+                        rotations.Add(Rotate270(length, width, height, length - 1 - maxX, this));
+                }
             }
             rotations.Sort();
             return rotations;
         }
-        // Returns a new Part equivalent to bitArray rotation 180 degrees about the Z axis and shifted as close to the X and Y axes as possible.
+        // Returns a new Part equivalent to bitArray rotation 180 degrees about the Z axis and shifted as close to the
+        // X and Y axes as possible. <shiftX> and <shiftY> are the amounts of empty space on the end of each axis in
+        // the original Part.
         public static Part Rotate180(byte length, byte width, byte height, int shiftX, int shiftY, Part part)
         {
             Part output = new Part(length, width, height);
@@ -77,23 +86,40 @@ namespace HyperStamper
                             output.Set(length - x - 1 - shiftX, width - y - 1 - shiftY, z, true);
             return output;
         }
+        public static Part Rotate90(byte length, byte width, byte height, int shiftY, Part part)
+        {
+            Part output = new Part(length, width, height);
+            int min = Math.Min(length, width);
+            int adjustedShiftY = shiftY - (length - min);
+            for (int x = 0; x < min; x++)
+                for (int y = 0; y < min; y++)
+                    for (int z = 0; z < height; z++)
+                        if (part.Get(x, y, z))
+                            output.Set(min - y - 1 - adjustedShiftY, x, z, true);
+            return output;
+        }
+        public static Part Rotate270(byte length, byte width, byte height, int shiftX, Part part)
+        {
+            Part output = new Part(length, width, height);
+            int min = Math.Min(length, width);
+            int adjustedShiftX = shiftX - (width - min);
+            for (int x = 0; x < min; x++)
+                for (int y = 0; y < min; y++)
+                    for (int z = 0; z < height; z++)
+                        if (part.Get(x, y, z))
+                            output.Set(y, min - x - 1 - adjustedShiftX, z, true);
+            return output;
+        }
 
         // Override methods.
         public int CompareTo(Part other)
         {
-            int thisIndex = Math.Min(0, bitArray.Length - other.bitArray.Length);
-            int otherIndex = Math.Min(0, other.bitArray.Length - bitArray.Length);
-
-            while (thisIndex != bitArray.Length)
-            {
-                bool thisBit = thisIndex < 0 ? false : bitArray.Get(thisIndex);
-                bool otherBit = otherIndex < 0 ? false : other.bitArray.Get(thisIndex);
-                if (thisBit != otherBit)
-                    return thisBit ? 1 : -1;
-                thisIndex++;
-                otherIndex++;
-            }
-
+            // Comparisons are only valid with two parts of identical dimensions.
+            if (length != other.length || width != other.width || height != other.height)
+                return 0;
+            for (int i = bitArray.Length - 1; i >= 0; i--)
+                if (bitArray.Get(i) != other.bitArray.Get(i))
+                    return bitArray.Get(i) ? 1 : -1;
             return 0;
         }
         public override bool Equals(object obj)

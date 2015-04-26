@@ -10,11 +10,14 @@ namespace HyperStamper
     {
         // The product
         public Part product;
-        // Maps from any part to a list of its rotations in canonical order.
+        // Maps from any part to a list of its rotations in canonical order -- rotations whose bit arrays evaluate to
+        // lower numbers are more canonical than those whose bit arrays evaluate to larger numbers.
         public Dictionary<Part, List<Part>> partRotations;
 
         public PartsInfo(String productString)
         {
+            // TODO: Check that the product completely fills the area given.
+
             List<bool> bools = new List<bool>();
             byte length = 0, width = 0, height = 0;
             string[] zSlices = productString.Split(new string[] { "\r\n\r\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -43,9 +46,14 @@ namespace HyperStamper
 
         public void Analyze(Part part)
         {
+            // TODO: Check that the part is shifted as close to the axes as possible.
+
             // Find all rotations of part and insert into partRotations with each rotation as key.
+            List<Part> rotations = part.GetRotations();
+            foreach (Part rotation in rotations)
+                partRotations.Add(rotation, rotations);
             
-            // Check if each rotation is a part of the product (or the entire product). If any are, they all are -- but you might want to canonicalize differently in that case.
+            // TODO: Check if each rotation is a part of the product (or the entire product). If any are, they all are -- but you might want to canonicalize differently in that case.
             // In fact, we might only want to store rotations that are subparts(?)
         }
     }
