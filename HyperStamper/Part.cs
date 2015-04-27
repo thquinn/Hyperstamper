@@ -12,7 +12,8 @@ namespace HyperStamper
 
         // Size of the product in the X, Y, and Z dimensions, as well as information about the absence (0) or
         // presence (1) of a block at each coordinate.
-        protected byte length, width, height;
+        // TODO: LWH don't need to be stored in every instance of Part. Maybe PartsInfo should pass dimensions when making calls like GetRotations().
+        public byte length, width, height;
         protected BitArray bitArray;
 
         // Constructors.
@@ -22,6 +23,19 @@ namespace HyperStamper
             this.width = width;
             this.height = height;
             this.bitArray = bitArray;
+        }
+        public Part(byte length, byte width, byte height, string s)
+        {
+            this.length = length;
+            this.width = width;
+            this.height = height;
+            List<bool> bools = new List<bool>();
+            foreach (char c in s)
+                if (c == 'X')
+                    bools.Add(true);
+                else if (c == 'O')
+                    bools.Add(false);
+            bitArray = new BitArray(bools.ToArray());
         }
         public Part(byte length, byte width, byte height)
         {
@@ -146,7 +160,7 @@ namespace HyperStamper
         public override string ToString()
         {
             for (int i = 0; i < bitArray.Length; i++)
-                stringBuilder.Append(bitArray.Get(i) ? '1' : '0');
+                stringBuilder.Append(bitArray.Get(i) ? 'X' : 'O');
             string output = stringBuilder.ToString();
             stringBuilder.Clear();
             return output;

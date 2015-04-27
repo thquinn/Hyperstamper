@@ -14,8 +14,11 @@ namespace HyperStamper
         // Maps from any part to a list of its rotations in canonical order -- rotations whose bit arrays evaluate to
         // lower numbers are more canonical than those whose bit arrays evaluate to larger numbers.
         public Dictionary<Part, List<Part>> partRotations;
-        // Returns true if the part (canonical rotation) is a substructure of the product at any rotation, false otherwise.
-        public Dictionary<Part, bool> isSubproductMemo;
+        // True if the key (a canonical Part) is a substructure of the product at any rotation, false otherwise.
+        private Dictionary<Part, bool> isSubproductMemo;
+        // Maps from the XORed hashes of two canonical Parts to a list of all subproducts that can be made by welding
+        // them together.
+        private Dictionary<int, List<Part>> allSubproductCombinationsMemo;
         // The product we're trying to create by combining parts.
         public Part product;
 
@@ -24,6 +27,7 @@ namespace HyperStamper
             // Initialize dictionaries.
             partRotations = new Dictionary<Part, List<Part>>();
             isSubproductMemo = new Dictionary<Part, bool>();
+            allSubproductCombinationsMemo = new Dictionary<int, List<Part>>();
 
             // TODO: Check that the product completely fills the area given.
 
@@ -46,10 +50,7 @@ namespace HyperStamper
                             bools.Add(false);
                 }
             }
-            BitArray bitArray = new BitArray(bools.Count);
-            for (int i = 0; i < bitArray.Length; i++)
-                bitArray.Set(i, bools[i]);
-            product = new Part(length, width, height, bitArray);
+            product = new Part(length, width, height, new BitArray(bools.ToArray()));
             // Set the product to the canonical rotation of itself.
             Analyze(product);
             product = partRotations[product][0];
@@ -68,14 +69,16 @@ namespace HyperStamper
             List<Part> rotations = part.GetRotations();
             foreach (Part rotation in rotations)
                 partRotations.Add(rotation, rotations);
-
-
         }
 
         // Returns the canonical rotations of all parts that can be produced by welding the two inputs together that
         // are substructures of the product.
         public List<Part> AllSubproductCombinations(Part first, Part second)
         {
+            int xoredHash = first.GetHashCode() ^ second.GetHashCode();
+            if (allSubproductCombinationsMemo.ContainsKey(xoredHash))
+                return allSubproductCombinationsMemo[xoredHash];
+
             // TODO: Implement.
             return null;
         }
@@ -87,8 +90,47 @@ namespace HyperStamper
             if (isSubproductMemo.ContainsKey(part))
                 return isSubproductMemo[part];
 
-            // TODO: Implement.
+            // Find max X, Y, Z of part within its bounding cube.
+            int maxX = 0, maxY = 0, maxZ = 0;
+            for (int x = 0; x < part.length; x++)
+                for (int y = 0; y < part.width; y++)
+                    for (int z = 0; z < part.height; z++)
+                        if (part.Get(x, y, z))
+                        {
+                            maxX = Math.Max(maxX, x);
+                            maxY = Math.Max(maxY, y);
+                            maxZ = Math.Max(maxZ, z);
+                        }
+
+            // Check all positions of each rotation against the product.
+            List<Part> rotations = partRotations[part];
+            bool subproductFound = false;
+            foreach (Part rotation in rotations)
+                if (IsSubproductForSingleRotation(rotation, maxX, maxY, maxZ))
+                {
+                    subproductFound = true;
+                    break;
+                }
+            isSubproductMemo.Add(rotations[0], subproductFound);
+            return subproductFound;
+        }
+        private bool IsSubproductForSingleRotation(Part part, int maxX, int maxY, int maxZ)
+        {
+            for (int xShift = 0; xShift < product.length - maxX; xShift++)
+                for (int yShift = 0; yShift < product.width - maxY; yShift++)
+                    for (int zShift = 0; zShift < product.height - maxZ; zShift++)
+                        if (IsSubproductForSingleShift(part, maxX, xShift, maxY, yShift, maxZ, zShift))
+                            return true;
             return false;
+        }
+        private bool IsSubproductForSingleShift(Part part, int maxX, int xShift, int maxY, int yShift, int maxZ, int zShift)
+        {
+            for (int x = 0; x <= maxX; x++)
+                for (int y = 0; y <= maxY; y++)
+                    for (int z = 0; z <= maxZ; z++)
+                        if (part.Get(x, y, z) != product.Get(x + xShift, y + yShift, z + zShift))
+                            return false;
+            return true;
         }
     }
 }

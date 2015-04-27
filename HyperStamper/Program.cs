@@ -15,6 +15,9 @@ namespace HyperStamper
             // TODO: Create a hashable collection of parts.
 
             // TODO: Do an iterative search on the collection of parts to see if it can be combined into the product.
+            Part part = new Part(5, 5, 5, "XXXXXOOOOOOOOOOOOOOOOOOOOXOOOXOOOOOOOOOOOOOOOOOOOOXOOOXOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+            info.Analyze(part);
+            bool isSubproduct = info.IsSubproduct(part);
         }
     }
 }
