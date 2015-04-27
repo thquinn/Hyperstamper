@@ -144,18 +144,22 @@ namespace HyperStamper
         }
         public override int GetHashCode()
         {
-            // TODO: Replace with a proper hash function that fills all 32 bits of the integer. The final hashing
-            // function should be such that if you have a collection of BitArrays, the hashes can be properly combined.
-            // Could just hash the hash...
-
-            int result = 29;
+            // Hash each 32-bit chunk of the bit array and XOR them all together.
+            int hash = 0;
+            uint u = 0;
             for (int i = 0; i < bitArray.Length; i++)
             {
-                if (bitArray.Get(i))
-                    result++;
-                result *= 23;
+                if (i % 32 == 0 && i != 0)
+                {
+                    hash ^= u.GetHashCode();
+                    u = 0;
+                }
+                u *= 2;
+                if (bitArray.Get(bitArray.Length - i - 1))
+                    u++;
             }
-            return result;
+            hash ^= u.GetHashCode();
+            return hash;
         }
         public override string ToString()
         {
