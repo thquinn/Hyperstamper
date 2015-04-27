@@ -13,11 +13,15 @@ namespace HyperStamper
         {
             parts = new SortedList<Part, int>();
         }
-        public PartCollection(PartCollection partCollection)
+        // Copies a PartCollection, but removes an instance of <used1> and <used2> and adds an instance of <made>.
+        public PartCollection(PartCollection partCollection, Part used1, Part used2, Part made)
         {
             parts = new SortedList<Part, int>();
             foreach (KeyValuePair<Part, int> pair in partCollection.parts)
                 parts.Add(pair.Key, pair.Value);
+            Remove(used1);
+            Remove(used2);
+            Add(made);
         }
 
         public void Add(Part part)
@@ -30,6 +34,37 @@ namespace HyperStamper
                 parts[part] += quantity;
             else
                 parts.Add(part, quantity);
+        }
+        public void Remove(Part part)
+        {
+            Remove(part, 1);
+        }
+        public void Remove(Part part, int quantity)
+        {
+            parts[part] -= quantity;
+            if (parts[part] <= 0)
+                parts.Remove(part);
+        }
+        public int Quantity()
+        {
+            int total = 0;
+            foreach (int quantity in parts.Values)
+                total += quantity;
+            return total;
+        }
+
+        public Tuple<Part, Part>[] GetPairs()
+        {
+            int numPairs = parts.Count * (parts.Count - 1) / 2;
+            Tuple<Part, Part>[] pairs = new Tuple<Part, Part>[numPairs];
+            int i = 0;
+            for (int first = 0; first < parts.Count - 1; first++)
+                for (int second = first + 1; second < parts.Count; second++)
+                {
+                    pairs[i] = new Tuple<Part, Part>(parts.Keys[first], parts.Keys[second]);
+                    i++;
+                }
+            return pairs;
         }
 
         public override bool Equals(object obj)
@@ -44,15 +79,11 @@ namespace HyperStamper
                     return false;
             return true;
         }
-
         public override int GetHashCode()
         {
             int hash = 0;
             foreach (KeyValuePair<Part, int> pair in parts)
-            {
-                hash ^= pair.Key.GetHashCode();
-                hash ^= pair.Value.GetHashCode();
-            }
+                hash ^= pair.Key.GetHashCode() * pair.Value;
             return hash;
         }
     }

@@ -9,12 +9,12 @@ namespace HyperStamper
     public class PartsInfo
     {
         public static readonly string STRUCTURAL_FRAME = "XXXXX\r\nXOOOX\r\nXOOOX\r\nXOOOX\r\nXXXXX\r\n\r\nXOOOX\r\nOOOOO\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\n\r\nXOOOX\r\nOOOOO\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\n\r\nXOOOX\r\nOOOOO\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\n\r\nXXXXX\r\nXOOOX\r\nXOOOX\r\nXOOOX\r\nXXXXX";
-        public static readonly string DOCKING_CLAMP = "XXXXX\r\nXXXXX\r\nXXXXX\r\nXXXXX\r\nXXXXX\r\n\r\nOOOOO\r\nOOOOO\r\nOOXOO\r\nOOOOO\r\nOOOOO\r\n\r\nOOOOO\r\nOOOOO\r\nXXXXX\r\nOOOOO\r\nOOOOO\r\n\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\nOOOOO\r\nOOOOO\r\n\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\nOOOOO\r\nOOOOO";
+        public static readonly string DOCKING_CLAMP = "XXXXX\r\nXXXXX\r\nXXXXX\r\nXXXXX\r\nXXXXX\r\n\r\nXOOOX\r\nOOOOO\r\nOOXOO\r\nOOOOO\r\nXOOOX\r\n\r\nXOOOX\r\nOOOOO\r\nXXXXX\r\nOOOOO\r\nXOOOX\r\n\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\nOOOOO\r\nOOOOO\r\n\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\nOOOOO\r\nOOOOO";
 
         // Maps from any part to a list of its rotations in canonical order -- rotations whose bit arrays evaluate to
         // lower numbers are more canonical than those whose bit arrays evaluate to larger numbers.
         public Dictionary<Part, List<Part>> partRotations;
-        // True if the key (a canonical Part) is a substructure of the product at any rotation, false otherwise.
+        // True if the key (a canonical Part) is a substructure of the product at any rotation.
         private Dictionary<Part, bool> isSubproductMemo;
         // Maps from the XORed hashes of two canonical Parts to a list of all subproducts that can be made by welding
         // them together.
@@ -53,7 +53,7 @@ namespace HyperStamper
             product = new Part(length, width, height, new BitArray(bools.ToArray()));
             // Set the product to the canonical rotation of itself.
             Analyze(product);
-            product = partRotations[product][0];
+            product = Canonicalize(product);
         }
 
         // Analyzes all relevant information about the given part and stores it to prevent repeat analysis.
@@ -69,6 +69,12 @@ namespace HyperStamper
             List<Part> rotations = part.GetRotations();
             foreach (Part rotation in rotations)
                 partRotations.Add(rotation, rotations);
+        }
+
+        // Returns the canonical rotation of the given part.
+        public Part Canonicalize(Part part)
+        {
+            return partRotations[part][0];
         }
 
         // Returns the canonical rotations of all parts that can be produced by welding the two inputs together that

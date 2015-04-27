@@ -87,7 +87,7 @@ namespace HyperStamper
             rotations.Sort();
             return rotations;
         }
-        // Returns a new Part equivalent to bitArray rotation 180 degrees about the Z axis and shifted as close to the
+        // Returns a new Part equivalent to this one, rotated 180 degrees about the Z axis and shifted as close to the
         // X and Y axes as possible. <shiftX> and <shiftY> are the amounts of empty space on the end of each axis in
         // the original Part.
         public static Part Rotate180(byte length, byte width, byte height, int shiftX, int shiftY, Part part)
@@ -151,14 +151,14 @@ namespace HyperStamper
             {
                 if (i % 32 == 0 && i != 0)
                 {
-                    hash ^= u.GetHashCode();
+                    hash ^= u.GetHashCode() * (i / 32);
                     u = 0;
                 }
                 u *= 2;
                 if (bitArray.Get(bitArray.Length - i - 1))
                     u++;
             }
-            hash ^= u.GetHashCode();
+            hash ^= u.GetHashCode() * ((bitArray.Length - 1) / 32 + 1);
             return hash;
         }
         public override string ToString()
