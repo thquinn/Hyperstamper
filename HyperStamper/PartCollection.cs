@@ -7,7 +7,7 @@ namespace HyperStamper
 {
     public class PartCollection
     {
-        protected SortedList<Part, int> parts;
+        public SortedList<Part, int> parts;
 
         public PartCollection()
         {

@@ -11,7 +11,7 @@ namespace HyperStamper
         private static StringBuilder stringBuilder = new StringBuilder();
 
         // Size of the product in the X, Y, and Z dimensions, as well as information about the absence (0) or
-        // presence (1) of a block at each coordinate.
+        // presence (1) of a block at each coordinate. For now, length and width must be equal.
         // TODO: LWH don't need to be stored in every instance of Part. Maybe PartsInfo should pass dimensions when making calls like GetRotations().
         public byte length, width, height;
         protected BitArray bitArray;
@@ -52,7 +52,7 @@ namespace HyperStamper
         {
             bitArray.Set(z * length * width + y * length + x, value);
         }
-
+        
         // Returns a list of this Part's rotations, itself included, in canonical order.
         public List<Part> GetRotations()
         {
@@ -123,6 +123,23 @@ namespace HyperStamper
                         if (part.Get(x, y, z))
                             output.Set(y, min - x - 1 - adjustedShiftX, z, true);
             return output;
+        }
+
+        // Helper methods.
+        public int[] MaxCoordinates()
+        {
+            // Find max X, Y, Z of part within its bounding cube.
+            int[] maxes = new int[3];
+            for (int x = 0; x < length; x++)
+                for (int y = 0; y < width; y++)
+                    for (int z = 0; z < height; z++)
+                        if (Get(x, y, z))
+                        {
+                            maxes[0] = Math.Max(maxes[0], x);
+                            maxes[1] = Math.Max(maxes[1], y);
+                            maxes[2] = Math.Max(maxes[2], z);
+                        }
+            return maxes;
         }
 
         // Override methods.

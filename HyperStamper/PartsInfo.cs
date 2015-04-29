@@ -18,7 +18,7 @@ namespace HyperStamper
         private Dictionary<Part, bool> isSubproductMemo;
         // Maps from the XORed hashes of two canonical Parts to a list of all subproducts that can be made by welding
         // them together.
-        private Dictionary<int, List<Part>> allSubproductCombinationsMemo;
+        private Dictionary<int, HashSet<Part>> allSubproductCombinationsMemo;
         // The product we're trying to create by combining parts.
         public Part product;
 
@@ -27,9 +27,10 @@ namespace HyperStamper
             // Initialize dictionaries.
             partRotations = new Dictionary<Part, List<Part>>();
             isSubproductMemo = new Dictionary<Part, bool>();
-            allSubproductCombinationsMemo = new Dictionary<int, List<Part>>();
+            allSubproductCombinationsMemo = new Dictionary<int, HashSet<Part>>();
 
             // TODO: Check that the product completely fills the area given.
+            // TODO: Enforce equal length and width.
 
             // Read the product string.
             List<bool> bools = new List<bool>();
@@ -70,49 +71,186 @@ namespace HyperStamper
             foreach (Part rotation in rotations)
                 partRotations.Add(rotation, rotations);
         }
+        public void Analyze(PartCollection partCollection)
+        {
+            foreach (Part part in partCollection.parts.Keys)
+                Analyze(part);
+        }
 
         // Returns the canonical rotation of the given part.
         public Part Canonicalize(Part part)
         {
+            Analyze(part);
             return partRotations[part][0];
         }
 
         // Returns the canonical rotations of all parts that can be produced by welding the two inputs together that
-        // are substructures of the product.
-        public List<Part> AllSubproductCombinations(Part first, Part second)
+        // are substructures of the product. <first> and <second> must be sorted.
+        public HashSet<Part> AllSubproductCombinations(Part first, Part second)
         {
-            int xoredHash = first.GetHashCode() ^ second.GetHashCode();
+            // If both parts are the same, just use that part's hash as the memo dictionary key. Otherwise, XOR them.
+            int xoredHash = first.Equals(second) ? first.GetHashCode() : first.GetHashCode() ^ second.GetHashCode();
             if (allSubproductCombinationsMemo.ContainsKey(xoredHash))
                 return allSubproductCombinationsMemo[xoredHash];
 
-            // TODO: Implement.
-            return null;
+            int[] firstMaxCoordinates = first.MaxCoordinates();
+            // Find each block on the first part that has a face.
+            List<Tuple<byte, byte, byte>> firstLeftFaces = new List<Tuple<byte,byte,byte>>();
+            List<Tuple<byte, byte, byte>> firstRightFaces = new List<Tuple<byte,byte,byte>>();
+            List<Tuple<byte, byte, byte>> firstBackFaces = new List<Tuple<byte,byte,byte>>();
+            List<Tuple<byte, byte, byte>> firstFrontFaces = new List<Tuple<byte,byte,byte>>();
+            List<Tuple<byte, byte, byte>> firstBottomFaces = new List<Tuple<byte,byte,byte>>();
+            List<Tuple<byte, byte, byte>> firstTopFaces = new List<Tuple<byte,byte,byte>>();
+            for (byte x = 0; x < first.length; x++)
+                for (byte y = 0; y < first.width; y++)
+                    for (byte z = 0; z < first.height; z++)
+                    {
+                        if (first.Get(x, y, z) && (x == 0 || !first.Get(x - 1, y, z)))
+                            firstLeftFaces.Add(new Tuple<byte, byte, byte>(x, y, z));
+                        if (first.Get(x, y, z) && (x == first.length - 1 || !first.Get(x + 1, y, z)))
+                            firstRightFaces.Add(new Tuple<byte, byte, byte>(x, y, z));
+                        if (first.Get(x, y, z) && (y == 0 || !first.Get(x, y - 1, z)))
+                            firstBackFaces.Add(new Tuple<byte, byte, byte>(x, y, z));
+                        if (first.Get(x, y, z) && (y == first.width - 1 || !first.Get(x, y + 1, z)))
+                            firstFrontFaces.Add(new Tuple<byte, byte, byte>(x, y, z));
+                        if (first.Get(x, y, z) && (z == 0 || !first.Get(x, y, z - 1)))
+                            firstBottomFaces.Add(new Tuple<byte, byte, byte>(x, y, z));
+                        if (first.Get(x, y, z) && (z == first.height - 1 || !first.Get(x, y, z + 1)))
+                            firstTopFaces.Add(new Tuple<byte, byte, byte>(x, y, z));
+                    }
+
+            // TODO: Find every combination, Analyze() each, and return the ones that are subproducts.
+            HashSet<Part> subproducts = new HashSet<Part>();
+            foreach (Part secondRotation in partRotations[second])
+            {
+                int[] secondMaxCoordinates = secondRotation.MaxCoordinates();
+                // Find each block on this rotation of the second part that has a face.
+                List<Tuple<byte, byte, byte>> secondLeftFaces = new List<Tuple<byte, byte, byte>>();
+                List<Tuple<byte, byte, byte>> secondRightFaces = new List<Tuple<byte, byte, byte>>();
+                List<Tuple<byte, byte, byte>> secondBackFaces = new List<Tuple<byte, byte, byte>>();
+                List<Tuple<byte, byte, byte>> secondFrontFaces = new List<Tuple<byte, byte, byte>>();
+                List<Tuple<byte, byte, byte>> secondBottomFaces = new List<Tuple<byte, byte, byte>>();
+                List<Tuple<byte, byte, byte>> secondTopFaces = new List<Tuple<byte, byte, byte>>();
+                for (byte x = 0; x < secondRotation.length; x++)
+                    for (byte y = 0; y < secondRotation.width; y++)
+                        for (byte z = 0; z < secondRotation.height; z++)
+                        {
+                            if (secondRotation.Get(x, y, z) && (x == 0 || !secondRotation.Get(x - 1, y, z)))
+                                secondLeftFaces.Add(new Tuple<byte, byte, byte>(x, y, z));
+                            if (secondRotation.Get(x, y, z) && (x == secondRotation.length - 1 || !secondRotation.Get(x + 1, y, z)))
+                                secondRightFaces.Add(new Tuple<byte, byte, byte>(x, y, z));
+                            if (secondRotation.Get(x, y, z) && (y == 0 || !secondRotation.Get(x, y - 1, z)))
+                                secondBackFaces.Add(new Tuple<byte, byte, byte>(x, y, z));
+                            if (secondRotation.Get(x, y, z) && (y == secondRotation.width - 1 || !secondRotation.Get(x, y + 1, z)))
+                                secondFrontFaces.Add(new Tuple<byte, byte, byte>(x, y, z));
+                            if (secondRotation.Get(x, y, z) && (z == 0 || !secondRotation.Get(x, y, z - 1)))
+                                secondBottomFaces.Add(new Tuple<byte, byte, byte>(x, y, z));
+                            if (secondRotation.Get(x, y, z) && (z == secondRotation.height - 1 || !secondRotation.Get(x, y, z + 1)))
+                                secondTopFaces.Add(new Tuple<byte, byte, byte>(x, y, z));
+                        }
+
+                // Create all combinations of left/right, back/front, top/bottom faces.
+                Part tempSubproduct;
+                foreach (Tuple<byte, byte, byte> firstFace in firstLeftFaces)
+                    foreach (Tuple<byte, byte, byte> secondFace in secondRightFaces)
+                        if (CombineSubproduct(first, secondRotation, firstFace, secondFace, -1, 0, 0, firstMaxCoordinates, secondMaxCoordinates, out tempSubproduct))
+                            subproducts.Add(tempSubproduct);
+                foreach (Tuple<byte, byte, byte> firstFace in firstRightFaces)
+                    foreach (Tuple<byte, byte, byte> secondFace in secondLeftFaces)
+                        if (CombineSubproduct(first, secondRotation, firstFace, secondFace, 1, 0, 0, firstMaxCoordinates, secondMaxCoordinates, out tempSubproduct))
+                            subproducts.Add(tempSubproduct);
+                foreach (Tuple<byte, byte, byte> firstFace in firstBackFaces)
+                    foreach (Tuple<byte, byte, byte> secondFace in secondFrontFaces)
+                        if (CombineSubproduct(first, secondRotation, firstFace, secondFace, 0, -1, 0, firstMaxCoordinates, secondMaxCoordinates, out tempSubproduct))
+                            subproducts.Add(tempSubproduct);
+                foreach (Tuple<byte, byte, byte> firstFace in firstFrontFaces)
+                    foreach (Tuple<byte, byte, byte> secondFace in secondBackFaces)
+                        if (CombineSubproduct(first, secondRotation, firstFace, secondFace, 0, 1, 0, firstMaxCoordinates, secondMaxCoordinates, out tempSubproduct))
+                            subproducts.Add(tempSubproduct);
+                foreach (Tuple<byte, byte, byte> firstFace in firstBottomFaces)
+                    foreach (Tuple<byte, byte, byte> secondFace in secondTopFaces)
+                        if (CombineSubproduct(first, secondRotation, firstFace, secondFace, 0, 0, -1, firstMaxCoordinates, secondMaxCoordinates, out tempSubproduct))
+                            subproducts.Add(tempSubproduct);
+                foreach (Tuple<byte, byte, byte> firstFace in firstTopFaces)
+                    foreach (Tuple<byte, byte, byte> secondFace in secondBottomFaces)
+                        if (CombineSubproduct(first, secondRotation, firstFace, secondFace, 0, 0, 1, firstMaxCoordinates, secondMaxCoordinates, out tempSubproduct))
+                            subproducts.Add(tempSubproduct);
+                // TODO: Prevent duplicated combinations.
+                // TODO: Memoize.
+            }
+            return subproducts;
         }
+        // Returns true if the two parts can be combined in the provided configuration without intersection and fit
+        // within the product bounding cube, and result in a subproduct.
+        private bool CombineSubproduct(Part first, Part second, Tuple<byte, byte, byte> firstBlock, Tuple<byte, byte, byte> secondBlock, int dx, int dy, int dz, int[] firstMaxCoordinates, int[] secondMaxCoordinates, out Part subproduct)
+        {
+            subproduct = null;
+
+            // Reject combinations that don't fit in the product bounding cube.
+            if (dx == -1 && (firstMaxCoordinates[0] - firstBlock.Item1) + secondBlock.Item1 + 2 > product.length) // left-right
+                return false;
+            if (dx == 1 && (secondMaxCoordinates[0] - secondBlock.Item1) + firstBlock.Item1 + 2 > product.length) // right-left
+                return false;
+            if (dy == -1 && (firstMaxCoordinates[1] - firstBlock.Item2) + secondBlock.Item2 + 2 > product.width) // back-front
+                return false;
+            if (dy == 1 && (secondMaxCoordinates[1] - secondBlock.Item2) + firstBlock.Item2 + 2 > product.width) // front-back
+                return false;
+            if (dz == -1 && (firstMaxCoordinates[2] - firstBlock.Item3) + secondBlock.Item3 + 2 > product.height) // bottom-top
+                return false;
+            if (dz == 1 && (secondMaxCoordinates[2] - secondBlock.Item3) + firstBlock.Item3 + 2 > product.height) // top-bottom
+                return false;
+
+            // Find shifts: how much of <second> exists in negative coordinates of <first>.
+            // THIS IS WRONG
+            int shiftX = 0, shiftY = 0, shiftZ = 0;
+            if (dx == -1)
+                shiftX = -Math.Min(0, firstBlock.Item1 - secondBlock.Item1 - 1);
+            if (dy == -1)
+                shiftY = -Math.Min(0, firstBlock.Item2 - secondBlock.Item2 - 1);
+            if (dz == -1)
+                shiftZ = -Math.Min(0, firstBlock.Item3 - secondBlock.Item3 - 1);
+
+            // Create the combination.
+            Part combination = new Part(product.length, product.width, product.height);
+            for (int x = 0; x < first.length; x++)
+                for (int y = 0; y < first.width; y++)
+                    for (int z = 0; z < first.height; z++)
+                        if (first.Get(x, y, z))
+                            combination.Set(x + shiftX, y + shiftY, z + shiftZ, true);
+            for (int x = 0; x < second.length; x++)
+                for (int y = 0; y < second.width; y++)
+                    for (int z = 0; z < second.height; z++)
+                    {
+                        if (!second.Get(x, y, z))
+                            continue;
+                        // If there's any intersection between the parts, reject the whole thing.
+                        if (combination.Get(firstBlock.Item1 + x + dx + shiftX, firstBlock.Item2 + y + dy + shiftY, firstBlock.Item3 + z + dz + shiftZ))
+                            return false;
+                        combination.Set(firstBlock.Item1 + x + dx + shiftX, firstBlock.Item2 + y + dy + shiftY, firstBlock.Item3 + z + dz + shiftZ, true);
+                    }
+            Analyze(combination);
+            if (!IsSubproduct(combination))
+                return false;
+            subproduct = Canonicalize(combination);
+            return true;
+        }
+
 
         // Check if each rotation is a part of the product (or is the entire product). If any are, they all are. Store
         // the result in isSubproductMemo under the canonical rotation.
         public bool IsSubproduct(Part part)
         {
-            if (isSubproductMemo.ContainsKey(part))
-                return isSubproductMemo[part];
+            // If we've seen seen this part before, return the same result.
+            if (isSubproductMemo.ContainsKey(Canonicalize(part)))
+                return isSubproductMemo[Canonicalize(part)];
 
-            // Find max X, Y, Z of part within its bounding cube.
-            int maxX = 0, maxY = 0, maxZ = 0;
-            for (int x = 0; x < part.length; x++)
-                for (int y = 0; y < part.width; y++)
-                    for (int z = 0; z < part.height; z++)
-                        if (part.Get(x, y, z))
-                        {
-                            maxX = Math.Max(maxX, x);
-                            maxY = Math.Max(maxY, y);
-                            maxZ = Math.Max(maxZ, z);
-                        }
+            int[] maxCoordinates = part.MaxCoordinates();
 
             // Check all positions of each rotation against the product.
             List<Part> rotations = partRotations[part];
             bool subproductFound = false;
             foreach (Part rotation in rotations)
-                if (IsSubproductForSingleRotation(rotation, maxX, maxY, maxZ))
+                if (IsSubproductForSingleRotation(rotation, maxCoordinates[0], maxCoordinates[1], maxCoordinates[2]))
                 {
                     subproductFound = true;
                     break;

@@ -19,12 +19,10 @@ namespace HyperStamper
             Part column = new Part(5, 5, 5, "XOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
             Part bottom = new Part(5, 5, 5, "XXXXXXXXXXXXXXXXXXXXXXXXXOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
             Part corner = new Part(5, 5, 5, "XOOOOOOOOOOOOOOOOOOOOOOOOXOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
-            partsInfo.Analyze(clamp);
-            partsInfo.Analyze(column);
-            partsInfo.Analyze(bottom);
             clamp = partsInfo.Canonicalize(clamp);
             column = partsInfo.Canonicalize(column);
             bottom = partsInfo.Canonicalize(bottom);
+            corner = partsInfo.Canonicalize(corner);
             PartCollection partCollection = new PartCollection();
             partCollection.Add(clamp);
             partCollection.Add(column);
@@ -46,6 +44,7 @@ namespace HyperStamper
         // Returns true if the collection of parts can be assembled into the initialized product, false if it can't.
         static bool IsAssembleable(PartCollection partCollection)
         {
+            partsInfo.Analyze(partCollection);
             Stack<PartCollection> toVisit = new Stack<PartCollection>();
             toVisit.Push(partCollection);
 
@@ -57,7 +56,7 @@ namespace HyperStamper
                 Tuple<Part, Part>[] pairs = current.GetPairs();
                 foreach (Tuple<Part, Part> pair in pairs)
                 {
-                    List<Part> subproductCombinations = partsInfo.AllSubproductCombinations(pair.Item1, pair.Item2);
+                    HashSet<Part> subproductCombinations = partsInfo.AllSubproductCombinations(pair.Item1, pair.Item2);
                     foreach (Part subproductCombination in subproductCombinations)
                     {
                         PartCollection newPartCollection = new PartCollection(current, pair.Item1, pair.Item2, subproductCombination);
