@@ -1,4 +1,11 @@
-﻿using System;
+﻿// TODO:
+// - There's a bug: set the number of twos in the structural frame example to 1
+// - Change order of pairs: try to add on to largest piece first?
+// - Add LRU/priority behavior to memo dictionaries
+// - Fix that Part hash!
+// - Add more intelligence to IsSubproduct: a lot of time is being spent on PartCollection with multiple parts that must occupy the same specific area of the product.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,22 +19,40 @@ namespace HyperStamper
 
         static void Main(string[] args)
         {
+            
+            Initialize(PartsInfo.STRUCTURAL_FRAME);
+
+            // Make a test PartCollection that can be assembled into the product.
+            Part square = new Part(5, 5, 5, "XXXXXOOOOOOOOOOOOOOOOOOOOXOOOXOOOOOOOOOOOOOOOOOOOOXOOOXOOOOOOOOOOOOOOOOOOOOXOOOXOOOOOOOOOOOOOOOOOOOOXXXXXOOOOOOOOOOOOOOOOOOOO");
+            Part c = new Part(5, 5, 5, "XXXXOOOOOOOOOOOOOOOOOOOOOXOOOOOOOOOOOOOOOOOOOOOOOOXOOOOOOOOOOOOOOOOOOOOOOOOXOOOOOOOOOOOOOOOOOOOOOOOOXXXXOOOOOOOOOOOOOOOOOOOOO");
+            Part two = new Part(5, 5, 5, "XXOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+            Part singleton = new Part(5, 5, 5, "XOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+            square = partsInfo.Canonicalize(square);
+            c = partsInfo.Canonicalize(c);
+            two = partsInfo.Canonicalize(two);
+            singleton = partsInfo.Canonicalize(singleton);
+            PartCollection partCollection = new PartCollection();
+            partCollection.Add(square);
+            partCollection.Add(c, 2);
+            partCollection.Add(two, 2);
+            partCollection.Add(singleton, 2);
+            
+
+            /*
             Initialize(PartsInfo.DOCKING_CLAMP);
 
             // Make a test PartCollection that can be assembled into the product.
-            Part clamp = new Part(5, 5, 5, "XXXXXOOOOOOOOOOOOOOOOOOOOXOOOXOOOOOOOOOOOOOOOOOOOOXOOOXOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+            Part clampBase = new Part(5, 5, 5, "XXXXXOOOOOOOOOOOOOOOOOOOOOOXOOOOOOOOOOOOOOOOOOOOOOXXXXXOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+            Part baseSlat = new Part(5, 5, 5, "XXXXXOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
             Part singleton = new Part(5, 5, 5, "XOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
-            Part bottom = new Part(5, 5, 5, "XXXXXXXXXXXXXXXXXXXXXXXXXOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
-            Part corner = new Part(5, 5, 5, "XOOOOOOOOOOOOOOOOOOOOOOOOXOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
-            clamp = partsInfo.Canonicalize(clamp);
+            clampBase = partsInfo.Canonicalize(clampBase);
+            baseSlat = partsInfo.Canonicalize(baseSlat);
             singleton = partsInfo.Canonicalize(singleton);
-            bottom = partsInfo.Canonicalize(bottom);
-            corner = partsInfo.Canonicalize(corner);
             PartCollection partCollection = new PartCollection();
-            partCollection.Add(clamp);
-            partCollection.Add(singleton);
-            partCollection.Add(bottom);
-            partCollection.Add(corner, 4);
+            partCollection.Add(clampBase);
+            partCollection.Add(baseSlat, 4);
+            partCollection.Add(singleton, 12);
+            */
 
             // Do an iterative search on the collection of parts to see if it can be combined into the product.
             Console.WriteLine(IsAssembleable(partCollection).ToString().ToLower());
@@ -77,6 +102,8 @@ namespace HyperStamper
                 Console.WriteLine("Searched " + visited.Count + " part collections.");
                 Console.WriteLine(toVisit.Count + " part collections in queue.");
                 Console.WriteLine("Smallest collection seen so far had " + minPartCollection.Quantity() + " parts:\r\n" + minPartCollection.ToString());
+                Console.WriteLine(partsInfo.memoedAnalyzeCalls + "/" + partsInfo.totalAnalyzeCalls + " analyze calls memoized. (" + decimal.Round((decimal)partsInfo.memoedAnalyzeCalls / partsInfo.totalAnalyzeCalls * 100, 2) + "%)");
+                Console.WriteLine(partsInfo.memoedAllSubproductCalls + "/" + partsInfo.totalAllSubproductCalls + " all-subproduct calls memoized. (" + decimal.Round((decimal)partsInfo.memoedAllSubproductCalls / partsInfo.totalAllSubproductCalls * 100, 2) + "%)");
             }
 
             return false;

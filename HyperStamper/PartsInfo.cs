@@ -22,6 +22,9 @@ namespace HyperStamper
         // The product we're trying to create by combining parts.
         public Part product;
 
+        // Optimization variables.
+        public int memoedAnalyzeCalls = 0, totalAnalyzeCalls = 0, memoedAllSubproductCalls = 0, totalAllSubproductCalls = 0;
+
         public PartsInfo(String productString)
         {
             // Initialize dictionaries.
@@ -63,8 +66,12 @@ namespace HyperStamper
             // TODO: Check that the part is shifted as close to the axes as possible, throw an error otherwise.
 
             // If we've already analyzed this part, we don't need to do it again.
+            totalAnalyzeCalls++;
             if (partRotations.ContainsKey(part))
+            {
+                memoedAnalyzeCalls++;
                 return;
+            }
 
             // Find all rotations of part and insert into partRotations with each rotation as key.
             List<Part> rotations = part.GetRotations();
@@ -92,8 +99,12 @@ namespace HyperStamper
             int firstHash = first.GetHashCode();
             int secondHash = second.GetHashCode();
             int xoredHash = first.Equals(second) ? first.GetHashCode() : first.GetHashCode() ^ second.GetHashCode();
+            totalAllSubproductCalls++;
             if (allSubproductCombinationsMemo.ContainsKey(xoredHash))
+            {
+                memoedAllSubproductCalls++;
                 return allSubproductCombinationsMemo[xoredHash];
+            }
 
             int[] firstMaxCoordinates = first.MaxCoordinates();
             // Find each block on the first part that has a face.
