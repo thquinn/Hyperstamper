@@ -16,16 +16,16 @@ namespace HyperStamper
 
             // Make a test PartCollection that can be assembled into the product.
             Part clamp = new Part(5, 5, 5, "XXXXXOOOOOOOOOOOOOOOOOOOOXOOOXOOOOOOOOOOOOOOOOOOOOXOOOXOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
-            Part column = new Part(5, 5, 5, "XOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+            Part singleton = new Part(5, 5, 5, "XOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
             Part bottom = new Part(5, 5, 5, "XXXXXXXXXXXXXXXXXXXXXXXXXOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
             Part corner = new Part(5, 5, 5, "XOOOOOOOOOOOOOOOOOOOOOOOOXOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
             clamp = partsInfo.Canonicalize(clamp);
-            column = partsInfo.Canonicalize(column);
+            singleton = partsInfo.Canonicalize(singleton);
             bottom = partsInfo.Canonicalize(bottom);
             corner = partsInfo.Canonicalize(corner);
             PartCollection partCollection = new PartCollection();
             partCollection.Add(clamp);
-            partCollection.Add(column);
+            partCollection.Add(singleton);
             partCollection.Add(bottom);
             partCollection.Add(corner, 4);
 
@@ -47,6 +47,7 @@ namespace HyperStamper
             partsInfo.Analyze(partCollection);
             Stack<PartCollection> toVisit = new Stack<PartCollection>();
             toVisit.Push(partCollection);
+            PartCollection minPartCollection = null;
 
             while (toVisit.Count > 0)
             {
@@ -63,11 +64,19 @@ namespace HyperStamper
                         // If there's only part in the collection, it's our product.
                         if (newPartCollection.Quantity() == 1)
                             return true;
+                        if (minPartCollection == null || newPartCollection.Quantity() <= minPartCollection.Quantity())
+                            minPartCollection = newPartCollection;
                         // Otherwise, we still have multiple subproducts. Keep searching.
                         if (!visited.Contains(newPartCollection))
                             toVisit.Push(newPartCollection);
                     }
                 }
+
+                // Update console.
+                Console.Clear();
+                Console.WriteLine("Searched " + visited.Count + " part collections.");
+                Console.WriteLine(toVisit.Count + " part collections in queue.");
+                Console.WriteLine("Smallest collection seen so far had " + minPartCollection.Quantity() + " parts:\r\n" + minPartCollection.ToString());
             }
 
             return false;

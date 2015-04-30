@@ -161,22 +161,9 @@ namespace HyperStamper
         }
         public override int GetHashCode()
         {
-            // Hash each 32-bit chunk of the bit array and XOR them all together.
-            int hash = 0;
-            uint u = 0;
-            for (int i = 0; i < bitArray.Length; i++)
-            {
-                if (i % 32 == 0 && i != 0)
-                {
-                    hash ^= u.GetHashCode() * (i / 32);
-                    u = 0;
-                }
-                u *= 2;
-                if (bitArray.Get(bitArray.Length - i - 1))
-                    u++;
-            }
-            hash ^= u.GetHashCode() * ((bitArray.Length - 1) / 32 + 1);
-            return hash;
+            // TODO: Unfortunately, int32.GetHashCode() just returns itself, so it's not so simple to hash an integer.
+            // Make a faster hash for this.
+            return ToString().GetHashCode();
         }
         public override string ToString()
         {

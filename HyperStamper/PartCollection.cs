@@ -7,6 +7,8 @@ namespace HyperStamper
 {
     public class PartCollection
     {
+        private static StringBuilder stringBuilder = new StringBuilder();
+
         public SortedList<Part, int> parts;
 
         public PartCollection()
@@ -56,12 +58,24 @@ namespace HyperStamper
         public Tuple<Part, Part>[] GetPairs()
         {
             int numPairs = parts.Count * (parts.Count - 1) / 2;
-            Tuple<Part, Part>[] pairs = new Tuple<Part, Part>[numPairs];
+            int numDoubleableParts = 0;
+            foreach (KeyValuePair<Part, int> pair in parts)
+                if (pair.Value >= 2)
+                    numDoubleableParts++;
+            Tuple<Part, Part>[] pairs = new Tuple<Part, Part>[numPairs + numDoubleableParts];
             int i = 0;
+            // All possible combinations of different parts.
             for (int first = 0; first < parts.Count - 1; first++)
                 for (int second = first + 1; second < parts.Count; second++)
                 {
                     pairs[i] = new Tuple<Part, Part>(parts.Keys[first], parts.Keys[second]);
+                    i++;
+                }
+            // All pairs of the same part that has at least two copies in this collection.
+            foreach (KeyValuePair<Part, int> pair in parts)
+                if (pair.Value >= 2)
+                {
+                    pairs[i] = new Tuple<Part, Part>(pair.Key, pair.Key);
                     i++;
                 }
             return pairs;
@@ -85,6 +99,18 @@ namespace HyperStamper
             foreach (KeyValuePair<Part, int> pair in parts)
                 hash ^= pair.Key.GetHashCode() * pair.Value;
             return hash;
+        }
+        public override string ToString()
+        {
+            foreach (KeyValuePair<Part, int> pair in parts)
+            {
+                stringBuilder.Append(pair.Value);
+                stringBuilder.Append("x ");
+                stringBuilder.AppendLine(pair.Key.ToString());
+            }
+            string output = stringBuilder.ToString();
+            stringBuilder.Clear();
+            return output;
         }
     }
 }

@@ -89,6 +89,8 @@ namespace HyperStamper
         public HashSet<Part> AllSubproductCombinations(Part first, Part second)
         {
             // If both parts are the same, just use that part's hash as the memo dictionary key. Otherwise, XOR them.
+            int firstHash = first.GetHashCode();
+            int secondHash = second.GetHashCode();
             int xoredHash = first.Equals(second) ? first.GetHashCode() : first.GetHashCode() ^ second.GetHashCode();
             if (allSubproductCombinationsMemo.ContainsKey(xoredHash))
                 return allSubproductCombinationsMemo[xoredHash];
@@ -175,18 +177,24 @@ namespace HyperStamper
                     foreach (Tuple<byte, byte, byte> secondFace in secondBottomFaces)
                         if (CombineSubproduct(first, secondRotation, firstFace, secondFace, 0, 0, 1, firstMaxCoordinates, secondMaxCoordinates, out tempSubproduct))
                             subproducts.Add(tempSubproduct);
-                // TODO: Prevent duplicated combinations.
-                // TODO: Memoize.
+                // TODO: Prevent duplicated combinations (i.e. different block pairs that nevertheless result in the
+                // same adjacency between parts).    
             }
+            // Memoize.
+            allSubproductCombinationsMemo.Add(xoredHash, subproducts);
+
             return subproducts;
         }
-        // Returns true if the two parts can be combined in the provided configuration without intersection and fit
-        // within the product bounding cube, and result in a subproduct.
+        // Returns true if the two parts can be combined in the provided configuration without intersection, fit within
+        // the product bounding cube, and result in a subproduct.
         private bool CombineSubproduct(Part first, Part second, Tuple<byte, byte, byte> firstBlock, Tuple<byte, byte, byte> secondBlock, int dx, int dy, int dz, int[] firstMaxCoordinates, int[] secondMaxCoordinates, out Part subproduct)
         {
             subproduct = null;
 
-            // Reject combinations that don't fit in the product bounding cube.
+            /* Reject combinations that don't fit in the product bounding cube.
+             * PROBLEM: This doesn't actually cover all cases. A dz of -1 can put a wide piece on top of another piece
+             * with an offset that causes it to go out of bounds in X or Y.
+             */
             if (dx == -1 && (firstMaxCoordinates[0] - firstBlock.Item1) + secondBlock.Item1 + 2 > product.length) // left-right
                 return false;
             if (dx == 1 && (secondMaxCoordinates[0] - secondBlock.Item1) + firstBlock.Item1 + 2 > product.length) // right-left
@@ -200,33 +208,38 @@ namespace HyperStamper
             if (dz == 1 && (secondMaxCoordinates[2] - secondBlock.Item3) + firstBlock.Item3 + 2 > product.height) // top-bottom
                 return false;
 
-            // Find shifts: how much of <second> exists in negative coordinates of <first>.
-            // THIS IS WRONG
-            int shiftX = 0, shiftY = 0, shiftZ = 0;
-            if (dx == -1)
-                shiftX = -Math.Min(0, firstBlock.Item1 - secondBlock.Item1 - 1);
-            if (dy == -1)
-                shiftY = -Math.Min(0, firstBlock.Item2 - secondBlock.Item2 - 1);
-            if (dz == -1)
-                shiftZ = -Math.Min(0, firstBlock.Item3 - secondBlock.Item3 - 1);
-
             // Create the combination.
             Part combination = new Part(product.length, product.width, product.height);
             for (int x = 0; x < first.length; x++)
                 for (int y = 0; y < first.width; y++)
                     for (int z = 0; z < first.height; z++)
                         if (first.Get(x, y, z))
-                            combination.Set(x + shiftX, y + shiftY, z + shiftZ, true);
+                        {
+                            int newX = Math.Max(x, secondBlock.Item1 - dx + (x - firstBlock.Item1));
+                            int newY = Math.Max(y, secondBlock.Item2 - dy + (y - firstBlock.Item2));
+                            int newZ = Math.Max(z, secondBlock.Item3 - dz + (z - firstBlock.Item3));
+                            // TEMPORARY FIX: If the combination would go outside bounds, reject it.
+                            if (newX < 0 || newX >= product.length || newY < 0 || newY >= product.width || newZ < 0 || newZ >= product.height)
+                                return false;
+                            combination.Set(newX, newY, newZ, true);
+                        }
             for (int x = 0; x < second.length; x++)
                 for (int y = 0; y < second.width; y++)
                     for (int z = 0; z < second.height; z++)
                     {
                         if (!second.Get(x, y, z))
                             continue;
-                        // If there's any intersection between the parts, reject the whole thing.
-                        if (combination.Get(firstBlock.Item1 + x + dx + shiftX, firstBlock.Item2 + y + dy + shiftY, firstBlock.Item3 + z + dz + shiftZ))
+                        int newX = Math.Max(x, firstBlock.Item1 + dx + (x - secondBlock.Item1));
+                        int newY = Math.Max(y, firstBlock.Item2 + dy + (y - secondBlock.Item2));
+                        int newZ = Math.Max(z, firstBlock.Item3 + dz + (z - secondBlock.Item3));
+                        // TEMPORARY FIX: If the combination would go outside bounds, reject it.
+                        if (newX < 0 || newX >= product.length || newY < 0 || newY >= product.width || newZ < 0 || newZ >= product.height)
                             return false;
-                        combination.Set(firstBlock.Item1 + x + dx + shiftX, firstBlock.Item2 + y + dy + shiftY, firstBlock.Item3 + z + dz + shiftZ, true);
+                        // If there's any intersection between the parts, reject the whole thing.
+                        if (combination.Get(newX, newY, newZ))
+                            return false;
+
+                        combination.Set(newX, newY, newZ, true);
                     }
             Analyze(combination);
             if (!IsSubproduct(combination))
@@ -244,13 +257,11 @@ namespace HyperStamper
             if (isSubproductMemo.ContainsKey(Canonicalize(part)))
                 return isSubproductMemo[Canonicalize(part)];
 
-            int[] maxCoordinates = part.MaxCoordinates();
-
             // Check all positions of each rotation against the product.
             List<Part> rotations = partRotations[part];
             bool subproductFound = false;
             foreach (Part rotation in rotations)
-                if (IsSubproductForSingleRotation(rotation, maxCoordinates[0], maxCoordinates[1], maxCoordinates[2]))
+                if (IsSubproductForSingleRotation(rotation))
                 {
                     subproductFound = true;
                     break;
@@ -258,12 +269,13 @@ namespace HyperStamper
             isSubproductMemo.Add(rotations[0], subproductFound);
             return subproductFound;
         }
-        private bool IsSubproductForSingleRotation(Part part, int maxX, int maxY, int maxZ)
+        private bool IsSubproductForSingleRotation(Part part)
         {
-            for (int xShift = 0; xShift < product.length - maxX; xShift++)
-                for (int yShift = 0; yShift < product.width - maxY; yShift++)
-                    for (int zShift = 0; zShift < product.height - maxZ; zShift++)
-                        if (IsSubproductForSingleShift(part, maxX, xShift, maxY, yShift, maxZ, zShift))
+            int[] maxCoordinates = part.MaxCoordinates();
+            for (int xShift = 0; xShift < product.length - maxCoordinates[0]; xShift++)
+                for (int yShift = 0; yShift < product.width - maxCoordinates[1]; yShift++)
+                    for (int zShift = 0; zShift < product.height - maxCoordinates[2]; zShift++)
+                        if (IsSubproductForSingleShift(part, maxCoordinates[0], xShift, maxCoordinates[1], yShift, maxCoordinates[2], zShift))
                             return true;
             return false;
         }
@@ -272,7 +284,7 @@ namespace HyperStamper
             for (int x = 0; x <= maxX; x++)
                 for (int y = 0; y <= maxY; y++)
                     for (int z = 0; z <= maxZ; z++)
-                        if (part.Get(x, y, z) != product.Get(x + xShift, y + yShift, z + zShift))
+                        if (part.Get(x, y, z) && !product.Get(x + xShift, y + yShift, z + zShift))
                             return false;
             return true;
         }
