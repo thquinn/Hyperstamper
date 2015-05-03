@@ -81,6 +81,16 @@ namespace HyperStamper
             return pairs;
         }
 
+        public int GetTotalCubeCount()
+        {
+            int cubeCount = 0;
+            foreach (KeyValuePair<Part, int> pair in parts)
+                for (int i = 0; i < pair.Key.bitArray.Length; i++)
+                    if (pair.Key.bitArray[i])
+                        cubeCount += pair.Value;
+            return cubeCount;
+        }
+
         public override bool Equals(object obj)
         {
             if (obj.GetType() != typeof(PartCollection))
