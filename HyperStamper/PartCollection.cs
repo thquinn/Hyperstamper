@@ -91,6 +91,16 @@ namespace HyperStamper
             return cubeCount;
         }
 
+        public float GetHeuristic()
+        {
+            float heuristic = 0;
+            foreach (KeyValuePair<Part, int> pair in parts) {
+                float cubeCount = pair.Key.GetCubeCount();
+                heuristic += pair.Value * cubeCount * cubeCount;
+            }
+            return heuristic;
+        }
+
         public override bool Equals(object obj)
         {
             if (obj.GetType() != typeof(PartCollection))

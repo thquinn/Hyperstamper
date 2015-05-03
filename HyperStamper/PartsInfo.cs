@@ -8,8 +8,9 @@ namespace HyperStamper
 {
     public class PartsInfo
     {
-        public static readonly string STRUCTURAL_FRAME = "XXXXX\r\nXOOOX\r\nXOOOX\r\nXOOOX\r\nXXXXX\r\n\r\nXOOOX\r\nOOOOO\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\n\r\nXOOOX\r\nOOOOO\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\n\r\nXOOOX\r\nOOOOO\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\n\r\nXXXXX\r\nXOOOX\r\nXOOOX\r\nXOOOX\r\nXXXXX";
         public static readonly string DOCKING_CLAMP = "XXXXX\r\nXXXXX\r\nXXXXX\r\nXXXXX\r\nXXXXX\r\n\r\nXOOOX\r\nOOOOO\r\nOOXOO\r\nOOOOO\r\nXOOOX\r\n\r\nXOOOX\r\nOOOOO\r\nXXXXX\r\nOOOOO\r\nXOOOX\r\n\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\nOOOOO\r\nOOOOO\r\n\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\nOOOOO\r\nOOOOO";
+        public static readonly string STRUCTURAL_FRAME = "XXXXX\r\nXOOOX\r\nXOOOX\r\nXOOOX\r\nXXXXX\r\n\r\nXOOOX\r\nOOOOO\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\n\r\nXOOOX\r\nOOOOO\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\n\r\nXOOOX\r\nOOOOO\r\nOOOOO\r\nOOOOO\r\nXOOOX\r\n\r\nXXXXX\r\nXOOOX\r\nXOOOX\r\nXOOOX\r\nXXXXX";
+        public static readonly string TINY_STRUCTURAL_FRAME = "XXX\r\nXOX\r\nXXX\r\n\r\nXOX\r\nOOO\r\nXOX\r\n\r\nXXX\r\nXOX\r\nXXX";
 
         // Maps from any part to a list of its rotations in canonical order -- rotations whose bit arrays evaluate to
         // lower numbers are more canonical than those whose bit arrays evaluate to larger numbers.

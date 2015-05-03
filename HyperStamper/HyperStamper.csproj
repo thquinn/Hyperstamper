@@ -43,6 +43,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assembler.cs" />
+    <Compile Include="DieCutter.cs" />
+    <Compile Include="Gene.cs" />
+    <Compile Include="GeneticDriver.cs" />
     <Compile Include="Part.cs" />
     <Compile Include="PartCollection.cs" />
     <Compile Include="PartsInfo.cs" />

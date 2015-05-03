@@ -14,7 +14,7 @@ namespace HyperStamper
         // presence (1) of a block at each coordinate. For now, length and width must be equal.
         // TODO: LWH don't need to be stored in every instance of Part. Maybe PartsInfo should pass dimensions when making calls like GetRotations().
         public byte length, width, height;
-        protected BitArray bitArray;
+        public BitArray bitArray;
 
         // Constructors.
         public Part(byte length, byte width, byte height, BitArray bitArray)
@@ -140,6 +140,15 @@ namespace HyperStamper
                             maxes[2] = Math.Max(maxes[2], z);
                         }
             return maxes;
+        }
+
+        public int GetCubeCount()
+        {
+            int cubeCount = 0;
+            for (int i = 0; i < bitArray.Length; i++)
+                if (bitArray[i])
+                    cubeCount ++;
+            return cubeCount;
         }
 
         // Override methods.
